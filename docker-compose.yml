@@ -1,0 +1,12 @@
+version: "3"
+services:
+  send-fb-post-with-media:
+    image: luisalejandro/send-fb-post-with-media:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /home/luisalejandro/app
+    volumes:
+      - .:/home/luisalejandro/app
+    env_file:
+      - .env
