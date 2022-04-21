@@ -18,53 +18,44 @@
 
 import os
 import time
-import datetime
-from urllib.request import urlopen
-from html import unescape
-from random import choice
+import json
 
-from atoma import parse_rss_bytes
 from pyfacebook import GraphAPI
 
 
-count = 0
-json_index_content = {}
 access_token = os.environ.get('FACEBOOK_ACCESS_TOKEN')
 page_id = os.environ.get('FACEBOOK_PAGE_ID')
-feed_url = os.environ.get('FEED_URL')
-max_post_age = int(os.environ.get('MAX_POST_AGE', 365))
-
-if not feed_url:
-    raise Exception('No FEED_URL provided.')
+status_text = os.environ.get('STATUS_TEXT')
+status_image_url_1 = os.environ.get('STATUS_IMAGE_URL_1')
+status_image_url_2 = os.environ.get('STATUS_IMAGE_URL_2')
+status_image_url_3 = os.environ.get('STATUS_IMAGE_URL_3')
+status_image_url_4 = os.environ.get('STATUS_IMAGE_URL_4')
 
 if not page_id:
     raise Exception('No FACEBOOK_PAGE_ID provided.')
 
+attached_media = []
 graph = GraphAPI(access_token=access_token, version="13.0")
 
-feed_data = parse_rss_bytes(urlopen(feed_url).read())
-today = datetime.datetime.now()
-max_age_delta = today - datetime.timedelta(days=max_post_age)
-max_age_timestamp = int(max_age_delta.strftime('%Y%m%d%H%M%S'))
+for imgurl in [status_image_url_1,
+               status_image_url_2,
+               status_image_url_3,
+               status_image_url_4]:
 
-for post in feed_data.items:
+    if not imgurl:
+        continue
 
-    item_timestamp = post.pub_date.strftime('%Y%m%d%H%M%S')
+    imgdata = {'url': imgurl, 'published': False}
+    media = graph.post_object(object_id=page_id,
+                              connection='photos',
+                              data=imgdata)
+    attached_media.append({'media_fbid': media['id']})
 
-    if int(item_timestamp) >= max_age_timestamp:
-        json_index_content[item_timestamp] = {
-            'title': post.title,
-            'url': post.guid,
-            'date': post.pub_date
-        }
-
-random_post_id = choice(list(json_index_content.keys()))
-random_post_title = json_index_content[random_post_id]['title']
-status_link = '{0}#{1}'.format(
-    json_index_content[random_post_id]['url'],
-    today.strftime('%Y%m%d%H%M%S'))
-data = {'message': unescape(random_post_title), 'link': status_link}
-
+data = {
+    'message': status_text,
+    'published': True,
+    'attached_media': json.dumps(attached_media)
+}
 fb = graph.post_object(object_id=page_id,
                        connection='feed',
                        data=data)

@@ -17,26 +17,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import tempfile
-from urllib.request import urlopen
+import json
 
-from tweepy import OAuth1UserHandler, API
+from pyfacebook import GraphAPI
 
 
-consumer_key = os.environ.get('TWITTER_CONSUMER_KEY')
-consumer_secret = os.environ.get('TWITTER_CONSUMER_SECRET')
-oauth_token = os.environ.get('TWITTER_OAUTH_TOKEN')
-oauth_secret = os.environ.get('TWITTER_OAUTH_SECRET')
+access_token = os.environ.get('FACEBOOK_ACCESS_TOKEN')
+page_id = os.environ.get('FACEBOOK_PAGE_ID')
 status_text = os.environ.get('STATUS_TEXT')
 status_image_url_1 = os.environ.get('STATUS_IMAGE_URL_1')
 status_image_url_2 = os.environ.get('STATUS_IMAGE_URL_2')
 status_image_url_3 = os.environ.get('STATUS_IMAGE_URL_3')
 status_image_url_4 = os.environ.get('STATUS_IMAGE_URL_4')
 
-media_ids = []
-auth = OAuth1UserHandler(consumer_key, consumer_secret,
-                         oauth_token, oauth_secret)
-api = API(auth, wait_on_rate_limit=True)
+if not page_id:
+    raise Exception('No FACEBOOK_PAGE_ID provided.')
+
+attached_media = []
+graph = GraphAPI(access_token=access_token, version="13.0")
 
 for imgurl in [status_image_url_1,
                status_image_url_2,
@@ -46,12 +44,17 @@ for imgurl in [status_image_url_1,
     if not imgurl:
         continue
 
-    _, tmpimg = tempfile.mkstemp(prefix='status-image-url-', suffix='.bin')
+    imgdata = {'url': imgurl, 'published': False}
+    media = graph.post_object(object_id=page_id,
+                              connection='photos',
+                              data=imgdata)
+    attached_media.append({'media_fbid': media['id']})
 
-    with open(tmpimg, 'wb') as i:
-        i.write(urlopen(imgurl).read())
-
-    media = api.media_upload(tmpimg)
-    media_ids.append(media.media_id)
-
-api.update_status(status_text, media_ids=media_ids)
+data = {
+    'message': status_text,
+    'published': True,
+    'attached_media': json.dumps(attached_media)
+}
+graph.post_object(object_id=page_id,
+                  connection='feed',
+                  data=data)
