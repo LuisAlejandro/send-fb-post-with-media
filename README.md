@@ -1,10 +1,4 @@
-<p align='center'>
-  <img src="https://github.com/LuisAlejandro/send-fb-post-with-media/blob/develop/branding/banner.svg">
-  <h3 align="center">Send Facebook post with media</h3>
-  <p align="center">GitHub Action for sending a Facebook post with an image</p>
-</p>
-
----
+# Development of this app has been halted in favor of [Agoras](https://github.com/LuisAlejandro/agoras)
 
 Current version: 0.1.0
 
